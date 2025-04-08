@@ -90,12 +90,14 @@ def login_view(request):
                 return redirect("login")  # Redirect back to login page
 
             login(request, user)
-            messages.success(request, "✅ Login successful! Welcome back.")
+            
 
             # Redirect based on user type (admin or regular user)
             if user.is_superuser:
+                messages.success(request, "✅ Login successful! Welcome back.")
                 return redirect("/admin/")  # Redirect to Django admin panel
             else:
+                messages.success(request, "✅ Login successful! Welcome back.")
                 return redirect("home")  # Redirect to the home page
         else:
             messages.error(request, "❌ Invalid email or password.")
