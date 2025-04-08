@@ -6,3 +6,4 @@ whitenoise
 Pillow
 django-colorfield
 dj-database-url 
+whitenoise
