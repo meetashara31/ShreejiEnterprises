@@ -6,6 +6,7 @@ from .forms import CustomUserCreationForm, CustomAuthenticationForm , ContactFor
 from .models import Product , ContactMessage
 from django.core.mail import send_mail , BadHeaderError , EmailMessage
 import random
+from django.contrib.messages import get_messages
 from django.contrib.auth.forms import UserCreationForm
 from django.conf import settings
 from django.http import JsonResponse
@@ -82,26 +83,27 @@ def login_view(request):
         email = request.POST.get("email")
         password = request.POST.get("password")
 
-        user = authenticate(request, username=email, password=password)  # Make sure `username=email`
+        user = authenticate(request, username=email, password=password)
 
         if user is not None:
             if not user.is_active:
                 messages.warning(request, "⚠️ Your account is inactive. Contact admin for help.")
-                return redirect("login")  # Redirect back to login page
+                return redirect("login")
 
             login(request, user)
-            
 
-            # Redirect based on user type (admin or regular user)
+            # 👇 Force Django to consume pending messages (clear old ones)
+            list(get_messages(request))
+
+            messages.success(request, "✅ Login successful! Welcome back.")
+
             if user.is_superuser:
-                messages.success(request, "✅ Login successful! Welcome back.")
-                return redirect("/admin/")  # Redirect to Django admin panel
+                return redirect("/admin/")
             else:
-                messages.success(request, "✅ Login successful! Welcome back.")
-                return redirect("home")  # Redirect to the home page
+                return redirect("home")
         else:
             messages.error(request, "❌ Invalid email or password.")
-            return redirect("login")  # Redirect to login page
+            return redirect("login")
 
     return render(request, "auth/login.html")
 
@@ -114,8 +116,14 @@ def product_list(request):
 
 
 def logout_view(request):
+    # 🔥 Clear all existing messages (like old login messages)
+    storage = get_messages(request)
+    for _ in storage:
+        pass  # this forces clearing old messages
+
     logout(request)
-    # messages.success(request, "✅ Logged out successfully!")
+
+    messages.success(request, "✅ Logged out successfully!")
     return redirect('login') 
 
 # forgot password 
