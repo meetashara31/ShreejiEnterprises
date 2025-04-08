@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+
+{% block title %}Login{% endblock title %}
+
+{% block hero %}
+<div class="flex justify-center items-center min-h-screen ">
+    <div class=" bg-rose-50 p-8 rounded-lg shadow-lg max-w-md w-full" data-aos="fade-up">
+        <h2 id="form-title" class="text-2xl font-bold text-center text-red-950 mb-6">Login</h2>
+
+        {% if messages %}
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                {% for message in messages %}
+                    var userResponse = confirm("{{ message }}");
+                    // You can add more logic here to handle different actions based on the user response
+                {% endfor %}
+            });
+        </script>
+        {% endif %}
+
+        <!-- LOGIN FORM -->
+        <form id="login-form" method="POST" action="{% url 'login' %}" class="space-y-4">
+            {% csrf_token %}
+            <input type="email" name="email" class="w-full p-3 border border-slate-300 rounded-lg  " placeholder="Email" required>
+            <input type="password" name="password" class="w-full p-3 border border-slate-300 rounded-lg " placeholder="Password" required>
+            <button type="submit" class="w-full bg-red-950 text-white py-3 rounded-lg hover:bg-slate-900">Login</button>
+        </form>
+
+        <!-- REGISTER FORM (Initially Hidden) -->
+        <form id="register-form" method="POST" action="{% url 'register' %}" class="space-y-4 hidden">
+            {% csrf_token %}
+            <input type="email" name="email" class="w-full p-3 border border-gray-300 rounded-lg  " placeholder="Email" required>
+            <input type="password" name="password1" class="w-full p-3 border border-gray-300 rounded-lg " placeholder="Password" required>
+            <input type="password" name="password2" class="w-full p-3 border border-gray-300 rounded-lg " placeholder="Confirm Password" required>
+            <button type="submit" class="w-full bg-red-950 text-white py-3 rounded-lg hover:bg-slate-900">Register</button>
+        </form>
+
+        <!-- TOGGLE BETWEEN LOGIN & REGISTER -->
+        <p class="text-sm text-gray-600 mt-4 text-center">
+            <span id="toggle-text">Don't have an account?</span>
+            <a href="#" id="toggle-link" class="text-red-950 font-bold">Register</a>
+
+        </p>
+        <p class="text-sm text-gray-600 mt-4 text-center">
+            <a href="{% url 'forgot_password' %}" class="text-red-950 font-bold">Forgot Password?</a>
+        </p>
+    </div>
+</div>
+
+<!-- JAVASCRIPT TO SWITCH FORMS -->
+<script>
+    document.getElementById("toggle-link").addEventListener("click", function(event) {
+        event.preventDefault();
+        let loginForm = document.getElementById("login-form");
+        let registerForm = document.getElementById("register-form");
+        let formTitle = document.getElementById("form-title");
+        let toggleText = document.getElementById("toggle-text");
+        let toggleLink = document.getElementById("toggle-link");
+
+        if (loginForm.classList.contains("hidden")) {
+            // Show login form and hide register form
+            registerForm.classList.add("hidden");
+            loginForm.classList.remove("hidden");
+            formTitle.textContent = "Login";
+            toggleText.textContent = "Don't have an account?";
+            toggleLink.textContent = "Register";
+        } else {
+            // Show register form and hide login form
+            loginForm.classList.add("hidden");
+            registerForm.classList.remove("hidden");
+            formTitle.textContent = "Create an Account";
+            toggleText.textContent = "Already have an account?";
+            toggleLink.textContent = "Login";
+        }
+    });
+</script>
+
+{% endblock %}
