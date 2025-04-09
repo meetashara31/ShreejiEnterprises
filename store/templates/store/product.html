@@ -24,10 +24,10 @@
     <!-- Fabric Type Filter -->
     <select id="fabricFilter" class="p-2 border rounded-lg">
         <option value="all">All Fabrics</option>
-        {% for product in products %}
-            <option value="{{ product.description|lower }}">{{ product.description }}</option>
-        {% endfor %}
-    </select>
+        {% for fabric in fabric_types %}
+        <option value="{{ fabric }}">{{ fabric|capfirst }}</option>
+      {% endfor %}
+      </select>
 </div>
 
 <!-- Product Grid -->
