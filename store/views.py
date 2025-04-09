@@ -10,6 +10,8 @@ from django.contrib.messages import get_messages
 from django.contrib.auth.forms import UserCreationForm
 from django.conf import settings
 from django.http import JsonResponse
+from django.db.models import Q
+from django.db.models.functions import Lower
 
 
 
