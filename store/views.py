@@ -20,8 +20,21 @@ def home(request):
 
 @login_required(login_url='login')
 def product_list(request):
-    products = Product.objects.prefetch_related('images').all()  
-    return render(request, 'product.html', {'products': products})
+    products = Product.objects.prefetch_related('images').all()
+
+    # Get distinct, non-empty, lowercased descriptions
+    fabric_types = (
+        Product.objects
+        .exclude(Q(description__isnull=True) | Q(description__exact=''))
+        .annotate(desc_lower=Lower('description'))
+        .values_list('desc_lower', flat=True)
+        .distinct()
+    )
+    print("Distinct Fabric Types:", list(fabric_types))
+    return render(request, 'product.html', {
+        'products': products,
+        'fabric_types': fabric_types,
+    })
 
 # @login_required(login_url='login')
 def contact(request):
@@ -106,14 +119,6 @@ def login_view(request):
             return redirect("login")
 
     return render(request, "auth/login.html")
-
-
-
-@login_required(login_url="login")  # ✅ Protect user-only views
-def product_list(request):
-    products = Product.objects.prefetch_related("images").all()
-    return render(request, "product.html", {"products": products})
-
 
 def logout_view(request):
     # 🔥 Clear all existing messages (like old login messages)
