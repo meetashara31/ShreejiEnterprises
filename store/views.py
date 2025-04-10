@@ -3,9 +3,11 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .forms import CustomUserCreationForm, CustomAuthenticationForm , ContactForm
-from .models import Product , ContactMessage
+from .models import Product , ContactMessage ,CustomUser
 from django.core.mail import send_mail , BadHeaderError , EmailMessage
 import random
+from django.utils import timezone
+from datetime import datetime, timedelta
 from django.contrib.messages import get_messages
 from django.contrib.auth.forms import UserCreationForm
 from django.conf import settings
@@ -13,7 +15,82 @@ from django.http import JsonResponse
 from django.db.models import Q
 from django.db.models.functions import Lower
 
+otp_storage = {}
 
+def register_view(request):
+    if request.method == 'POST':
+        form = CustomUserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save(commit=False)
+            email = form.cleaned_data.get('email')
+
+            # Generate and store OTP with expiry
+            otp = random.randint(100000, 999999)
+            expiry = datetime.now() + timedelta(minutes=10)
+            otp_storage[email] = {'otp': otp, 'expiry': expiry}
+
+            # Store in session
+            request.session['pending_email'] = email
+            request.session['user_data'] = {
+                'email': email,
+                'password': form.cleaned_data.get('password1'),
+                'name': form.cleaned_data.get('name'),
+            }
+
+            # Send email
+            send_mail(
+                'Verify Your Email - OTP',
+                f'Your OTP for registration is: {otp}. It will expire in 10 minutes.',
+                settings.EMAIL_HOST_USER,
+                [email],
+                fail_silently=False,
+            )
+
+            messages.success(request, '📧 OTP sent to your email. Please verify.')
+            return redirect('verify_email')
+
+        else:
+            messages.error(request, '❌ Registration failed. Please check the form.')
+    else:
+        form = CustomUserCreationForm()
+
+    return render(request, 'auth/register.html', {'form': form})
+def verify_email(request):
+    email = request.session.get('pending_email')
+
+    if request.method == 'POST':
+        entered_otp = request.POST.get('otp')
+        stored = otp_storage.get(email)
+
+        if not stored:
+            messages.error(request, '❌ OTP expired or invalid. Please register again.')
+            return redirect('register')
+
+        # Check expiry
+        if datetime.now() > stored['expiry']:
+            del otp_storage[email]
+            messages.error(request, '⏰ OTP has expired. Please register again.')
+            return redirect('register')
+
+        # Match OTP
+        if str(stored['otp']) == str(entered_otp):
+            data = request.session.get('user_data')
+            user = CustomUser.objects.create_user(
+                email=data['email'],
+                password=data['password'],
+                name=data['name'],
+                is_active=True
+            )
+            del otp_storage[email]
+            del request.session['pending_email']
+            del request.session['user_data']
+
+            messages.success(request, '✅ Email verified! You can now log in.')
+            return redirect('login')
+        else:
+            messages.error(request, '❌ Incorrect OTP.')
+
+    return render(request, 'auth/verify_email.html', {'email': email})
 
 # @login_required(login_url='login')
 def home(request):
@@ -37,7 +114,6 @@ def product_list(request):
         'products': products,
         'fabric_types': fabric_types,
     })
-
 # @login_required(login_url='login')
 def contact(request):
     if request.method == 'POST':
@@ -77,19 +153,6 @@ def error_page(request):
 def about(request):
     return render(request, 'about.html')
 
-def register_view(request):
-    if request.method == 'POST':
-        form = CustomUserCreationForm(request.POST)  # Use CustomUserCreationForm instead of UserCreationForm
-        if form.is_valid():
-            user = form.save()
-            messages.success(request, 'Account created successfully. Please log in.')
-            return redirect('login')
-        else:
-            messages.error(request, 'Registration failed. Please check the details and try again.')
-    else:
-        form = CustomUserCreationForm()  # Use your custom form here
-    
-    return render(request, 'auth/register.html', {'form': form})
 
 User = get_user_model()
 
@@ -121,6 +184,11 @@ def login_view(request):
             return redirect("login")
 
     return render(request, "auth/login.html")
+
+
+
+
+
 
 def logout_view(request):
     # 🔥 Clear all existing messages (like old login messages)
