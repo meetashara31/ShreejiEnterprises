@@ -1,7 +1,7 @@
 from django.db import models
 from colorfield.fields import ColorField
 from django.utils.timezone import now
-from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.contrib.auth.models import AbstractUser, BaseUserManager , PermissionsMixin
 from django.contrib.auth import get_user_model
 
 class Contact(models.Model):
@@ -40,9 +40,12 @@ class CustomUserManager(BaseUserManager):
 class CustomUser(AbstractUser):
     username = None  # ✅ Remove username field
     email = models.EmailField(unique=True)
-
+    name = models.CharField(max_length=255,null=True)
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
+    is_active = models.BooleanField(default=False)  # Initially inactive
+    otp = models.IntegerField(null=True, blank=True)
+    otp_created_at = models.DateTimeField(null=True, blank=True)
 
     objects = CustomUserManager()
 
